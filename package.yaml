@@ -1,0 +1,43 @@
+name:                chinese-calendar
+version:             0.1.0.0
+github:              "FroskyArr/chinese-calendar"
+license:             BSD3
+author:              "FroskyArr"
+maintainer:          "FroskyArr <me@frost.moe>"
+copyright:           "2021 FroskyArr"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+synopsis:            Chinese calendar
+category:            Time
+description:         Please see the README on GitHub at <https://github.com/FroskyArr/chinese-calendar#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+
+executables:
+  chinese-calendar-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - chinese-calendar
+
+tests:
+  chinese-calendar-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - chinese-calendar
