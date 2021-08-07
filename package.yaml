@@ -16,20 +16,11 @@ description:         Please see the README on GitHub at <https://github.com/Fros
 
 dependencies:
 - base >= 4.7 && < 5
+- text
+- time
 
 library:
   source-dirs: src
-
-executables:
-  chinese-calendar-exe:
-    main:                Main.hs
-    source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - chinese-calendar
 
 tests:
   chinese-calendar-test:
