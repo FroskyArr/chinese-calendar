@@ -8,7 +8,7 @@ import qualified Data.Text as T
 
 newtype ChnDay = ChnDay Day
 
-toGregorian :: ChnDay -> (Interger, Int, Int)
+toGregorian :: ChnDay -> (Integer, Int, Int)
 toGregorian = Calendar.toGregorian . toDay
 
 fromGregorian :: Integer -> Int -> Int -> ChnDay
