@@ -9,4 +9,4 @@ main :: IO ()
 main = print $ decode year2020
 
 year2020 :: BSL.ByteString
-year2020 = BSL.pack [0xE4, 0x52, 0x55, 0xB0, 0x69, 0, 0, 0, 0x4, 0]
+year2020 = BSL.pack [0x47, 0x4A, 0xB0, 0x45, 0, 0, 0, 0, 0x4]
