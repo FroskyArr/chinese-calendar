@@ -59,11 +59,11 @@ decode bs = flip runGetL bs $ runDecode $ do
 
 {-
 
-1-4: leapMonth (0-12), 0 => Not a leap year
-5-17: MonthLength, 0 => shorter month (30 days), 1 => longer month (31 days)
-18-23: Spring Festival date offset to 01/01
-24: empty
-25-72: solar term offset
+0-3: leapMonth (0-12), 0 => Not a leap year
+4-16: MonthLength, 0 => shorter month (30 days), 1 => longer month (31 days)
+17-22: Spring Festival date offset to 01/01
+23: empty
+24-71: solar term offset (starting from 小寒), 2 bits each
 
 9 bytes
 
