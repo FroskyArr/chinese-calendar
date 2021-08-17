@@ -7,13 +7,15 @@ import Data.Time
 import Data.Time.Calendar as Calendar
 
 import Data.Bits
-import Data.Bits.Coded (runDecode)
+import Data.Bits.Coded (runDecode, runEncode)
 import Data.Bits.Coding
 import Data.Bits.Extras (assignBit)
 import Data.Bytes.Get (MonadGet, runGetL)
+import Data.Bytes.Put (runPutL)
 import Data.Word
 
-import Control.Monad (void)
+import Control.Monad (replicateM, void, when)
+import Data.Maybe
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
@@ -41,7 +43,13 @@ data C = C
   } deriving (Eq, Show)
 
 encode :: C -> BSL.ByteString
-encode = undefined
+encode C{..} = runPutL . runEncode $ do
+  putBitsFrom 3 $ fromMaybe 0 leapMonth
+  mapM_ putBit dayOfMonth
+  when (isNothing leapMonth) $ putBit False
+  putBitsFrom 5 $ springFestival
+  putBit False
+  mapM_ (putBitsFrom 1) solarTermOffset
 
 decode :: BSL.ByteString -> C
 decode bs = flip runGetL bs $ runDecode $ do
