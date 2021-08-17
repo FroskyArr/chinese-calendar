@@ -1,13 +1,17 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Data.Time.Calendar.Chinese where
 
 import Data.Text (Text)
 import Data.Time
 import Data.Time.Calendar as Calendar
 
+import Data.Bits
 import Data.Bits.Coded (runDecode)
 import Data.Bits.Coding
-import Data.Bytes.Get (runGetL)
+import Data.Bits.Extras (assignBit)
+import Data.Bytes.Get (MonadGet, runGetL)
+import Data.Word
 
 import Control.Monad (void)
 
@@ -41,15 +45,25 @@ encode = undefined
 
 decode :: BSL.ByteString -> C
 decode bs = flip runGetL bs $ runDecode $ do
-  lm <- getBitsFrom 4 0
-  let leapMonth = if lm == 0 then Nothing else Just lm
-      monthNum = if lm == 0 then 12 else 13
-  dayOfMonth <- sequence $ replicate monthNum getBit
-  springFestival <- getBits 7 1 0
+  lm <- getBitsFrom 3 0
+  bools13 <- sequence $ replicate 13 getBit
+  let leapMonth =   if lm == 0 then Nothing else Just lm
+      monthNum =    if lm == 0 then 12 else 13
+      dayOfMonth = (if lm == 0 then init else id) bools13
+  springFestival <- (`shiftR` 1) <$> getBits 6 1 0
   void getBit
-  solarTermOffset <- sequence $ replicate 24 (getBitsFrom 2 0)
+  solarTermOffset <- sequence $ replicate 24 (fromIntegral <$> getAsW8 2)
   pure C{..}
 
+getAsW8 :: MonadGet m => Int -> Coding m Word8
+getAsW8 n | n > 8 = error "getAsW8 n, n should <= 8"
+getAsW8 n = go 0 0
+  where
+  go :: MonadGet m => Word8 -> Int -> Coding m Word8
+  go acc i | i == n = pure acc
+  go acc i = do
+    acc <- assignBit acc i <$> getBit
+    go acc (i+1)
 
 
 
