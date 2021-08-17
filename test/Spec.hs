@@ -8,8 +8,16 @@ import qualified Data.ByteString.Lazy as BSL
 main :: IO ()
 main = hspec $ do
   describe "decode" $
-    it "" $
+    it "decode bytes into calendar info" $
       decode year2020 `shouldBe` year2020'
+
+  describe "encode" $ do
+    it "encode calendar info into bytes" $
+      encode year2020' `shouldBe` year2020
+    it "decode . encode ≡ id" $
+      (decode . encode) year2020' `shouldBe` year2020'
+    it "encode . decode ≡ id" $
+      (encode . decode) year2020 `shouldBe` year2020
 
 year2020 :: BSL.ByteString
 year2020 = BSL.pack [0x47, 0x4A, 0xB0, 0x45, 0, 0, 0, 0, 0x4]
