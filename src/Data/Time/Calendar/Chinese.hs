@@ -34,7 +34,7 @@ data C = C
   , leapMonth :: Maybe Int
   , dayOfMonth :: [Bool]
   , solarTermOffset :: [Int]
-  }
+  } deriving (Eq, Show)
 
 encode :: C -> BSL.ByteString
 encode = undefined
