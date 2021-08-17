@@ -1,9 +1,18 @@
+{-# LANGUAGE RecordWildCards #-}
 module Data.Time.Calendar.Chinese where
 
+import Data.Text (Text)
 import Data.Time
 import Data.Time.Calendar as Calendar
-import Data.Text (Text)
 
+import Data.Bits.Coded (runDecode)
+import Data.Bits.Coding
+import Data.Bytes.Get (runGetL)
+
+import Control.Monad (void)
+
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
 
 newtype ChnDay = ChnDay Day
@@ -21,13 +30,25 @@ toDay :: ChnDay -> Day
 toDay = undefined
 
 data C = C
-  { yearGregorian :: Int
-  , springFestival :: Day
-  , isLeapYear :: Bool
+  { springFestival :: Int
   , leapMonth :: Maybe Int
   , dayOfMonth :: [Bool]
   , solarTermOffset :: [Int]
   }
+
+encode :: C -> BSL.ByteString
+encode = undefined
+
+decode :: BSL.ByteString -> C
+decode bs = flip runGetL bs $ runDecode $ do
+  lm <- getBitsFrom 4 0
+  let leapMonth = if lm == 0 then Nothing else Just lm
+      monthNum = if lm == 0 then 12 else 13
+  dayOfMonth <- sequence $ replicate monthNum getBit
+  springFestival <- getBits 7 1 0
+  void getBit
+  solarTermOffset <- sequence $ replicate 24 (getBitsFrom 2 0)
+  pure C{..}
 
 
 
