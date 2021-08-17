@@ -19,6 +19,9 @@ dependencies:
 - memory
 - text
 - time
+- bytestring
+- bytes
+- bits
 
 library:
   source-dirs: src
