@@ -71,7 +71,24 @@ format (ChnDay day) =
   (y,m,d) = Calendar.toGregorian day
   offset = fromInteger $ day `diffDays` Calendar.fromGregorian y 1 1
   yinfo = lookup y
-  year = showYear $ if springFestival yinfo > offset then y-1 else y
+  isBeforeSF = springFestival yinfo > offset
+  year = showYear $ if isBeforeSF then y-1 else y
+
+  -- TODO refactoring
+  calcMD =
+    go offsetToSF 1 (if isBeforeSF then lastyearinfo else yinfo)
+    where
+    offsetToSF = day `diffDays` sf
+    lastyearinfo = lookup (y-1)
+    sf =
+      if springFestival yinfo > offset
+        then springFestival lastyearinfo `addDays` Calendar.fromGregorian (y-1) 1 1
+        else springFestival yinfo `addDays` Calendar.fromGregorian y 1 1
+    go day month (dom:doms) =
+      if x >= 0
+        then go x (month+1) doms
+        else (month, day)
+      where x = day - 29 - fromEnum dom
 
 showYear :: Integer -> String
 showYear y =
