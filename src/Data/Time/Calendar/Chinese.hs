@@ -72,18 +72,16 @@ format (ChnDay day) =
   offset = fromInteger $ day `diffDays` Calendar.fromGregorian y 1 1
   yinfo = lookup y
   isBeforeSF = springFestival yinfo > offset
-  year = showYear $ if isBeforeSF then y-1 else y
+  (year, yearInfo) = if isBeforeSF then (y-1, lookup (y-1)) else (y, yinfo)
+  yearStr = showYear year
 
   -- TODO refactoring
-  calcMD =
-    go offsetToSF 1 (if isBeforeSF then lastyearinfo else yinfo)
+  (month, day) = go offsetToSF 1
     where
-    offsetToSF = day `diffDays` sf
-    lastyearinfo = lookup (y-1)
-    sf =
-      if springFestival yinfo > offset
-        then springFestival lastyearinfo `addDays` Calendar.fromGregorian (y-1) 1 1
-        else springFestival yinfo `addDays` Calendar.fromGregorian y 1 1
+    sf = toInteger (springFestival yearInfo) `addDays` Calendar.fromGregorian y 1 1
+    offsetToSF = fromInteger $ day `diffDays` sf
+    go :: Int -> Int -> [Bool] -> (Int, Int)
+    go _ _ [] = undefined
     go day month (dom:doms) =
       if x >= 0
         then go x (month+1) doms
