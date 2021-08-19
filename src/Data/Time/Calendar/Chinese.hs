@@ -16,6 +16,7 @@ import Data.Word
 
 import Control.Monad (replicateM, void, when)
 import Data.Maybe
+import Prelude hiding (lookup)
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
@@ -63,7 +64,27 @@ decode bs = flip runGetL bs $ runDecode $ do
   solarTermOffset <- sequence $ replicate 24 (getBitsFrom 1 0)
   pure C{..}
 
+format :: ChnDay -> String
+format (ChnDay day) =
+  undefined
+  where
+  (y,m,d) = Calendar.toGregorian day
+  offset = fromInteger $ day `diffDays` Calendar.fromGregorian y 1 1
+  yinfo = lookup y
+  year = showYear $ if springFestival yinfo > offset then y-1 else y
 
+showYear :: Integer -> String
+showYear y =
+  [stems !! stem, branches !! branch, '年']
+  where
+  stems = "甲乙丙丁戊己庚辛壬癸"
+  branches = "子丑寅卯辰巳午未申酉戌亥"
+  o = fromInteger y - 4
+  stem = o `mod` 10
+  branch = o `mod` 12
+
+lookup :: Integer -> C
+lookup = undefined
 
 {-
 
