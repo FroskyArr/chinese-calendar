@@ -65,28 +65,32 @@ decode bs = flip runGetL bs $ runDecode $ do
   pure C{..}
 
 format :: ChnDay -> String
-format (ChnDay day) =
+format (ChnDay day0) =
   undefined
   where
-  (y,m,d) = Calendar.toGregorian day
-  offset = fromInteger $ day `diffDays` Calendar.fromGregorian y 1 1
+  (y,m,d) = Calendar.toGregorian day0
+  offset = fromInteger $ day0 `diffDays` Calendar.fromGregorian y 1 1
   yinfo = lookup y
   isBeforeSF = springFestival yinfo > offset
   (year, yearInfo) = if isBeforeSF then (y-1, lookup (y-1)) else (y, yinfo)
-  yearStr = showYear year
-
-  -- TODO refactoring
-  (month, day) = go offsetToSF 1
+  ((isLeap, month), day) = go offsetToSF 1 (dayOfMonth yearInfo)
     where
-    sf = toInteger (springFestival yearInfo) `addDays` Calendar.fromGregorian y 1 1
-    offsetToSF = fromInteger $ day `diffDays` sf
-    go :: Int -> Int -> [Bool] -> (Int, Int)
+    sf = toInteger (springFestival yearInfo)
+          `addDays` Calendar.fromGregorian year 1 1
+    offsetToSF = fromInteger $ day0 `diffDays` sf
+    go :: Int -> Int -> [Bool] -> ((Bool, Int), Int)
     go _ _ [] = undefined
     go day month (dom:doms) =
       if x >= 0
         then go x (month+1) doms
-        else (month, day)
+        else (calcLeap month, day+1) -- day+1 because it's not offset anymore
       where x = day - 29 - fromEnum dom
+    calcLeap = undefined :: Int -> (Bool, Int)
+
+  yearStr = showYear year
+  monthStr = showMonth isLeap month
+  dayStr = showDay day
+
 
 showYear :: Integer -> String
 showYear y =
@@ -97,6 +101,23 @@ showYear y =
   o = fromInteger y - 4
   stem = o `mod` 10
   branch = o `mod` 12
+
+showMonth :: Bool -> Int -> String
+showMonth True month = '闰' : chnNum !! month <> "月"
+showMonth False month = chnNum !! month <> "月"
+
+-- Well, it works.
+showDay :: Int -> String
+showDay day | 1 <= day && day <= 10  = '初' : chnNum !! day
+showDay day | 11 <= day && day <= 19 = '十' : chnNum !! (day-10)
+showDay 20 = "二十"
+showDay day | 21 <= day && day <= 29 = '廿' : chnNum !! (day-20)
+showDay 30 = "三十"
+
+-- XD
+chnNum :: [String]
+chnNum =
+  ["零","一","二","三","四","五","六","七","八","九","十","十一","十二"]
 
 lookup :: Integer -> C
 lookup = undefined
