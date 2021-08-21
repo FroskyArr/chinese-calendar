@@ -66,7 +66,7 @@ decode bs = flip runGetL bs $ runDecode $ do
 
 format :: ChnDay -> String
 format (ChnDay day0) =
-  undefined
+  yearStr <> monthStr <> dayStr
   where
   (y,m,d) = Calendar.toGregorian day0
   offset = fromInteger $ day0 `diffDays` Calendar.fromGregorian y 1 1
@@ -79,13 +79,17 @@ format (ChnDay day0) =
           `addDays` Calendar.fromGregorian year 1 1
     offsetToSF = fromInteger $ day0 `diffDays` sf
     go :: Int -> Int -> [Bool] -> ((Bool, Int), Int)
-    go _ _ [] = undefined
+    go _ _ [] = error "internal error"
     go day month (dom:doms) =
       if x >= 0
         then go x (month+1) doms
         else (calcLeap month, day+1) -- day+1 because it's not offset anymore
       where x = day - 29 - fromEnum dom
-    calcLeap = undefined :: Int -> (Bool, Int)
+    calcLeap :: Int -> (Bool, Int)
+    calcLeap m = case leapMonth yearInfo of
+      Just x | x == m -> (True, m)
+      Just x | x < m -> (False, m-1)
+      _ -> (False, m)
 
   yearStr = showYear year
   monthStr = showMonth isLeap month
