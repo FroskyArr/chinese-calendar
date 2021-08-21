@@ -48,20 +48,20 @@ encode C{..} = runPutL . runEncode $ do
   putBitsFrom 3 $ fromMaybe 0 leapMonth
   mapM_ putBit dayOfMonth
   when (isNothing leapMonth) $ putBit False
-  putBitsFrom 5 $ springFestival
+  putBitsFrom 5 springFestival
   putBit False
   mapM_ (putBitsFrom 1) solarTermOffset
 
 decode :: BSL.ByteString -> C
 decode bs = flip runGetL bs $ runDecode $ do
   lm <- getBitsFrom 3 0
-  bools13 <- sequence $ replicate 13 getBit
-  let leapMonth =   if lm == 0 then Nothing else Just lm
-      monthNum =    if lm == 0 then 12 else 13
+  bools13 <- replicateM 13 getBit
+  let leapMonth  =  if lm == 0 then Nothing else Just lm
+      monthNum   =  if lm == 0 then 12 else 13
       dayOfMonth = (if lm == 0 then init else id) bools13
   springFestival <- getBitsFrom 5 0
   void getBit
-  solarTermOffset <- sequence $ replicate 24 (getBitsFrom 1 0)
+  solarTermOffset <- replicateM 24 (getBitsFrom 1 0)
   pure C{..}
 
 format :: ChnDay -> String
@@ -120,6 +120,7 @@ showDay day | 11 <= day && day <= 19 = '十' : chnNum !! (day-10)
 showDay 20 = "二十"
 showDay day | 21 <= day && day <= 29 = '廿' : chnNum !! (day-20)
 showDay 30 = "三十"
+showDay _ = ""
 
 -- XD
 chnNum :: [String]
