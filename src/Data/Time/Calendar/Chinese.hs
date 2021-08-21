@@ -66,34 +66,37 @@ decode bs = flip runGetL bs $ runDecode $ do
 
 format :: ChnDay -> String
 format (ChnDay day0) =
-  yearStr <> monthStr <> dayStr
+  showYear year
+  <> showMonth isLeap month
+  <> showDay day
   where
-  (y,m,d) = Calendar.toGregorian day0
+  (y,_,_) = Calendar.toGregorian day0
   offset = fromInteger $ day0 `diffDays` Calendar.fromGregorian y 1 1
   yinfo = lookup y
-  isBeforeSF = springFestival yinfo > offset
-  (year, yearInfo) = if isBeforeSF then (y-1, lookup (y-1)) else (y, yinfo)
+  (year, yearInfo) =
+    if springFestival yinfo > offset
+      then (y-1, lookup (y-1))
+      else (y, yinfo)
   ((isLeap, month), day) = go offsetToSF 1 (dayOfMonth yearInfo)
-    where
-    sf = toInteger (springFestival yearInfo)
-          `addDays` Calendar.fromGregorian year 1 1
-    offsetToSF = fromInteger $ day0 `diffDays` sf
-    go :: Int -> Int -> [Bool] -> ((Bool, Int), Int)
-    go _ _ [] = error "internal error"
-    go day month (dom:doms) =
-      if x >= 0
-        then go x (month+1) doms
-        else (calcLeap month, day+1) -- day+1 because it's not offset anymore
-      where x = day - 29 - fromEnum dom
-    calcLeap :: Int -> (Bool, Int)
-    calcLeap m = case leapMonth yearInfo of
-      Just x | x == m -> (True, m)
-      Just x | x < m -> (False, m-1)
-      _ -> (False, m)
 
-  yearStr = showYear year
-  monthStr = showMonth isLeap month
-  dayStr = showDay day
+  sf = toInteger (springFestival yearInfo)
+        `addDays` Calendar.fromGregorian year 1 1
+  offsetToSF = fromInteger $ day0 `diffDays` sf
+
+  go :: Int -> Int -> [Bool] -> ((Bool, Int), Int)
+  go _ _ [] = error "internal error"
+  go day month (dom:doms) =
+    if x >= 0
+      then go x (month+1) doms
+      else (calcLeap month, day+1) -- day+1 because it's not offset anymore
+    where x = day - 29 - fromEnum dom
+
+  calcLeap :: Int -> (Bool, Int)
+  calcLeap m = case leapMonth yearInfo of
+    Just x | x == m -> (True, m)
+    Just x | x < m -> (False, m-1)
+    _ -> (False, m)
+
 
 
 showYear :: Integer -> String
