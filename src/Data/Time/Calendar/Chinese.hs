@@ -129,8 +129,17 @@ chnNum :: [String]
 chnNum =
   ["零","一","二","三","四","五","六","七","八","九","十","十一","十二"]
 
+range :: (Integer, Integer)
+range = (1901, 2100)
+
 lookup :: Integer -> C
-lookup = undefined
+lookup year = index `seq` (decode $ BSL.fromStrict $ data_ Vector.! index)
+  where
+  (l, r) = range
+  index =
+    if l <= year || year <= r
+      then fromInteger $ year - fst range
+      else error "year out of range"
 
 {-
 
