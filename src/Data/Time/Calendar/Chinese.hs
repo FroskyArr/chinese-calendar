@@ -15,6 +15,7 @@ import Data.Bytes.Put (runPutL)
 import Data.Word
 
 import Control.Monad (replicateM, void, when)
+import Data.Coerce
 import Data.Maybe
 import Data.Vector (Vector)
 import Prelude hiding (lookup)
@@ -33,10 +34,12 @@ fromGregorian :: Integer -> Int -> Int -> ChnDay
 fromGregorian y m d = fromDay $ Calendar.fromGregorian y m d
 
 fromDay :: Day -> ChnDay
-fromDay = undefined
+fromDay = coerce
+{-# INLINE fromDay #-}
 
 toDay :: ChnDay -> Day
-toDay = undefined
+toDay = coerce
+{-# INLINE toDay #-}
 
 data C = C
   { springFestival :: Int
