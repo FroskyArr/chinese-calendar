@@ -38,7 +38,9 @@ library
     , bytes
     , bytestring
     , memory
+    , template-haskell
     , text
+    , th-lift-instances
     , time
     , vector
   default-language: Haskell2010
@@ -60,7 +62,9 @@ test-suite chinese-calendar-test
     , chinese-calendar
     , hspec
     , memory
+    , template-haskell
     , text
+    , th-lift-instances
     , time
     , vector
   default-language: Haskell2010

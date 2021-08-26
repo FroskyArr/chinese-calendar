@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Data.Time.Calendar.Chinese where
 
 import Data.Text (Text)
@@ -17,7 +18,9 @@ import Data.Word
 import Control.Monad (replicateM, void, when)
 import Data.Coerce
 import Data.Maybe
-import Data.Vector (Vector)
+import Data.Vector (Vector, (!))
+import Instances.TH.Lift ()
+import Language.Haskell.TH.Syntax (lift)
 import Prelude hiding (lookup)
 
 import qualified Data.ByteString as BS
@@ -115,28 +118,28 @@ showYear y =
   branch = o `mod` 12
 
 showMonth :: Bool -> Int -> String
-showMonth True month = '闰' : chnNum !! month <> "月"
-showMonth False month = chnNum !! month <> "月"
+showMonth True month = '闰' : chnNum ! month <> "月"
+showMonth False month = chnNum ! month <> "月"
 
 -- Well, it works.
 showDay :: Int -> String
-showDay day | 1 <= day && day <= 10  = '初' : chnNum !! day
-showDay day | 11 <= day && day <= 19 = '十' : chnNum !! (day-10)
+showDay day | 1 <= day && day <= 10  = '初' : chnNum ! day
+showDay day | 11 <= day && day <= 19 = '十' : chnNum ! (day-10)
 showDay 20 = "二十"
-showDay day | 21 <= day && day <= 29 = '廿' : chnNum !! (day-20)
+showDay day | 21 <= day && day <= 29 = '廿' : chnNum ! (day-20)
 showDay 30 = "三十"
 showDay _ = ""
 
 -- XD
-chnNum :: [String]
-chnNum =
-  ["零","一","二","三","四","五","六","七","八","九","十","十一","十二"]
+chnNum :: Vector String
+chnNum = $(lift (Vector.fromList
+  ["零","一","二","三","四","五","六","七","八","九","十","十一","十二"]))
 
 range :: (Integer, Integer)
 range = (1901, 2100)
 
 lookup :: Integer -> C
-lookup year = index `seq` (decode $ BSL.fromStrict $ data_ Vector.! index)
+lookup year = index `seq` (decode $ BSL.fromStrict $ data_ ! index)
   where
   (l, r) = range
   index =
@@ -158,7 +161,7 @@ lookup year = index `seq` (decode $ BSL.fromStrict $ data_ Vector.! index)
 -}
 
 data_ :: Vector BS.ByteString
-data_ = Vector.fromList $ fmap BS.pack
+data_ = $(lift (Vector.fromList (fmap BS.pack
   [[4,174,98,165,166,170,154,170,169],     [10,87,76,169,170,174,170,170,170]
   ,[101,38,184,170,250,238,174,234,170],   [13,38,92,234,165,154,89,154,165]
   ,[13,149,68,165,166,170,154,170,169],    [86,170,176,169,170,170,170,170,170]
@@ -259,4 +262,4 @@ data_ = Vector.fromList $ fmap BS.pack
   ,[4,174,70,80,81,85,69,85,84],           [90,78,176,84,0,0,0,0,0]
   ,[10,45,84,0,80,68,0,64,0],              [13,21,62,64,80,69,4,69,80]
   ,[61,146,168,80,81,85,69,85,84],         [13,82,156,168,170,170,170,170]
-  ]
+  ])))

@@ -23,6 +23,8 @@ dependencies:
 - bytes
 - bits
 - vector
+- th-lift-instances
+- template-haskell
 
 library:
   source-dirs: src
