@@ -3,17 +3,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Data.Time.Calendar.Chinese where
 
-import Data.Text (Text)
 import Data.Time
 import Data.Time.Calendar as Calendar
 
-import Data.Bits
 import Data.Bits.Coded (runDecode, runEncode)
 import Data.Bits.Coding
 import Data.Bits.Extras (assignBit)
 import Data.Bytes.Get (MonadGet, runGetL)
 import Data.Bytes.Put (runPutL)
-import Data.Word
 
 import Control.Monad (replicateM, void, when)
 import Data.Coerce
@@ -25,16 +22,17 @@ import Prelude hiding (lookup)
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
-import qualified Data.Text as T
 import qualified Data.Vector as Vector
 
 newtype ChnDay = ChnDay Day
 
 toGregorian :: ChnDay -> (Integer, Int, Int)
 toGregorian = Calendar.toGregorian . toDay
+{-# INLINE toGregorian #-}
 
 fromGregorian :: Integer -> Int -> Int -> ChnDay
 fromGregorian y m d = fromDay $ Calendar.fromGregorian y m d
+{-# INLINE fromGregorian #-}
 
 fromDay :: Day -> ChnDay
 fromDay = coerce
@@ -105,8 +103,6 @@ format (ChnDay day0) =
     Just x | x < m -> (False, m-1)
     _ -> (False, m)
 
-
-
 showYear :: Integer -> String
 showYear y =
   [stems !! stem, branches !! branch, '年']
@@ -134,12 +130,13 @@ showDay _ = ""
 chnNum :: Vector String
 chnNum = $(lift (Vector.fromList
   ["零","一","二","三","四","五","六","七","八","九","十","十一","十二"]))
+{-# NOINLINE chnNum #-}
 
 range :: (Integer, Integer)
 range = (1901, 2100)
 
 lookup :: Integer -> C
-lookup year = index `seq` (decode $ BSL.fromStrict $ data_ ! index)
+lookup year = index `seq` decode (BSL.fromStrict $ data_ ! index)
   where
   (l, r) = range
   index =
@@ -263,3 +260,4 @@ data_ = $(lift (Vector.fromList (fmap BS.pack
   ,[10,45,84,0,80,68,0,64,0],              [13,21,62,64,80,69,4,69,80]
   ,[61,146,168,80,81,85,69,85,84],         [13,82,156,168,170,170,170,170]
   ])))
+{-# NOINLINE data_ #-}

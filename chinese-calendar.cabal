@@ -37,9 +37,7 @@ library
     , bits
     , bytes
     , bytestring
-    , memory
     , template-haskell
-    , text
     , th-lift-instances
     , time
     , vector
@@ -61,9 +59,7 @@ test-suite chinese-calendar-test
     , bytestring
     , chinese-calendar
     , hspec
-    , memory
     , template-haskell
-    , text
     , th-lift-instances
     , time
     , vector

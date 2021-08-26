@@ -16,15 +16,13 @@ description:         Please see the README on GitHub at <https://github.com/Fros
 
 dependencies:
 - base >= 4.7 && < 5
-- memory
-- text
-- time
-- bytestring
-- bytes
 - bits
-- vector
-- th-lift-instances
+- bytes
+- bytestring
 - template-haskell
+- th-lift-instances
+- time
+- vector
 
 library:
   source-dirs: src
