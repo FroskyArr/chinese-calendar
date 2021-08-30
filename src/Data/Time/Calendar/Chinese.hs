@@ -2,15 +2,24 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Data.Time.Calendar.Chinese (
+  ChnDay,
   fromGregorian, fromGregorianValid, toGregorian,
   fromDay, fromDayValid, toDay,
   today,
   format, getSolarTerm
   ) where
 
-import Data.Time (Day(..), UTCTime(utctDay), addDays, diffDays, getCurrentTime)
+import Data.Time
+       ( Day(..)
+       , LocalTime(localDay)
+       , ZonedTime(zonedTimeToLocalTime)
+       , addDays
+       , diffDays
+       , getCurrentTime
+       , hoursToTimeZone
+       , utcToZonedTime
+       )
 import qualified Data.Time.Calendar as Calendar
-import Debug.Trace
 
 import Data.Bits.Coded (runDecode, runEncode)
 import Data.Bits.Coding (getBit, getBitsFrom, putBit, putBitsFrom)
@@ -31,6 +40,7 @@ import Data.Functor ((<&>))
 import qualified Data.Vector as Vector
 
 newtype ChnDay = ChnDay Day
+  deriving (Eq, Ord, Show)
 
 -- | It will clip an unsupported date to 1901-01-01 or 2100-12-31
 fromGregorian :: Integer -> Int -> Int -> ChnDay
@@ -65,8 +75,11 @@ toDay :: ChnDay -> Day
 toDay (ChnDay day) = day
 {-# INLINE toDay #-}
 
+-- | It uses UTC+8 timezone regardless of locale.
 today :: IO ChnDay
-today = fromDay . utctDay <$> getCurrentTime
+today =
+  fromDay . localDay . zonedTimeToLocalTime . utcToZonedTime (hoursToTimeZone 8)
+  <$> getCurrentTime
 {-# INLINE today #-}
 
 
@@ -100,6 +113,7 @@ decode bs = flip runGetL bs $ runDecode $ do
   pure C{..}
 
 
+-- |
 -- >>> format (fromGregorian 2033 12 31)
 -- "癸丑年闰十一月初十"
 format :: ChnDay -> String
@@ -133,9 +147,10 @@ format (ChnDay day0) =
   calcLeap :: Int -> (Bool, Int)
   calcLeap m = case leapMonth yearInfo of
     Just x | x == m -> (True, m-1)
-    Just x | x < m -> traceShowId (False, m-1)
+    Just x | x < m -> (False, m-1)
     _ -> (False, m)
 
+-- |
 -- >>> getSolarTerm (fromGregorian 2021 8 23)
 -- Just "处暑"
 getSolarTerm (ChnDay day0) =
