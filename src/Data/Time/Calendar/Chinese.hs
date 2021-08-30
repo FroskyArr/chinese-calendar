@@ -8,12 +8,10 @@ import Data.Time.Calendar as Calendar
 
 import Data.Bits.Coded (runDecode, runEncode)
 import Data.Bits.Coding
-import Data.Bits.Extras (assignBit)
 import Data.Bytes.Get (MonadGet, runGetL)
 import Data.Bytes.Put (runPutL)
 
 import Control.Monad (replicateM, void, when)
-import Data.Coerce
 import Data.Maybe
 import Data.Vector (Vector, (!))
 import Instances.TH.Lift ()
@@ -26,21 +24,39 @@ import qualified Data.Vector as Vector
 
 newtype ChnDay = ChnDay Day
 
-toGregorian :: ChnDay -> (Integer, Int, Int)
-toGregorian = Calendar.toGregorian . toDay
-{-# INLINE toGregorian #-}
-
 fromGregorian :: Integer -> Int -> Int -> ChnDay
 fromGregorian y m d = fromDay $ Calendar.fromGregorian y m d
 {-# INLINE fromGregorian #-}
 
+fromGregorianValid :: Integer -> Int -> Int -> Maybe ChnDay
+fromGregorianValid y m d = do
+  if inRange yearRange (fromInteger y)
+    then ChnDay <$> Calendar.fromGregorianValid y m d
+    else Nothing
+{-# INLINE fromGregorianValid #-}
+
+toGregorian :: ChnDay -> (Integer, Int, Int)
+toGregorian (ChnDay day) = Calendar.toGregorian day
+{-# INLINE toGregorian #-}
+
 fromDay :: Day -> ChnDay
-fromDay = coerce
+fromDay =
+  ChnDay . ModifiedJulianDay . clip modifiedJulianDayRange . toModifiedJulianDay
 {-# INLINE fromDay #-}
 
+fromDayValid :: Day -> Maybe ChnDay
+fromDayValid day = do
+  if inRange modifiedJulianDayRange (toModifiedJulianDay day)
+    then Just (ChnDay day)
+    else Nothing
+{-# INLINE fromDayValid #-}
+
 toDay :: ChnDay -> Day
-toDay = coerce
+toDay (ChnDay day) = day
 {-# INLINE toDay #-}
+
+today :: IO ChnDay
+today = fromDay . utctDay <$> getCurrentTime
 
 data C = C
   { springFestival :: Int
@@ -132,17 +148,30 @@ chnNum = $(lift (Vector.fromList
   ["零","一","二","三","四","五","六","七","八","九","十","十一","十二"]))
 {-# NOINLINE chnNum #-}
 
-range :: (Integer, Integer)
-range = (1901, 2100)
+yearRange :: (Int, Int)
+yearRange = (1901, 2100)
+
+modifiedJulianDayRange :: (Integer, Integer)
+modifiedJulianDayRange = $(lift
+  (toModifiedJulianDay (Calendar.fromGregorian (toInteger 1901) 1 1)
+  ,toModifiedJulianDay (Calendar.fromGregorian (toInteger 2100) 12 31)
+  ))
+
+clip :: Ord a => (a, a) -> a -> a
+clip (l,_) n | n < l = l
+clip (_,r) n | n > r = r
+clip _     n         = n
+{-# INLINE clip #-}
+
+inRange :: Ord a => (a, a) -> a -> Bool
+inRange (l,r) n | l <= n && n <= r = True
+inRange _ _ = False
+{-# INLINE inRange #-}
 
 lookup :: Integer -> C
 lookup year = index `seq` decode (BSL.fromStrict $ data_ ! index)
   where
-  (l, r) = range
-  index =
-    if l <= year || year <= r
-      then fromInteger $ year - fst range
-      else error "year out of range"
+  index = fromInteger year - fst yearRange
 
 {-
 
