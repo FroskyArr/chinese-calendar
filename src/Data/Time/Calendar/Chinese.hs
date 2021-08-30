@@ -5,11 +5,12 @@ module Data.Time.Calendar.Chinese (
   fromGregorian, fromGregorianValid, toGregorian,
   fromDay, fromDayValid, toDay,
   today,
-  format
+  format, getSolarTerm
   ) where
 
 import Data.Time (Day(..), UTCTime(utctDay), addDays, diffDays, getCurrentTime)
 import qualified Data.Time.Calendar as Calendar
+import Debug.Trace
 
 import Data.Bits.Coded (runDecode, runEncode)
 import Data.Bits.Coding (getBit, getBitsFrom, putBit, putBitsFrom)
@@ -31,10 +32,12 @@ import qualified Data.Vector as Vector
 
 newtype ChnDay = ChnDay Day
 
+-- | It will clip an unsupported date to 1901-01-01 or 2100-12-31
 fromGregorian :: Integer -> Int -> Int -> ChnDay
 fromGregorian y m d = fromDay $ Calendar.fromGregorian y m d
 {-# INLINE fromGregorian #-}
 
+-- | It returns `Nothing` if given an unsupported date.
 fromGregorianValid :: Integer -> Int -> Int -> Maybe ChnDay
 fromGregorianValid y m d =
   if inRange yearRange (fromInteger y)
@@ -97,7 +100,8 @@ decode bs = flip runGetL bs $ runDecode $ do
   pure C{..}
 
 
-
+-- >>> format (fromGregorian 2033 12 31)
+-- "癸丑年闰十一月初十"
 format :: ChnDay -> String
 format (ChnDay day0) =
   showYear year
@@ -128,10 +132,11 @@ format (ChnDay day0) =
   calcLeap :: Int -> (Bool, Int)
   calcLeap m = case leapMonth yearInfo of
     Just x | x == m -> (True, m)
-    Just x | x < m -> (False, m-1)
+    Just x | x < m -> traceShowId (False, m-1)
     _ -> (False, m)
 
-getSolarTerm :: ChnDay -> Maybe String
+-- >>> getSolarTerm (fromGregorian 2021 8 23)
+-- Just "处暑"
 getSolarTerm (ChnDay day0) =
   asum $ [m*2-1, m*2-2] <&> \idx -> do
     let d = solarTermOffsets ! idx + offsetsInYear !! idx
@@ -219,15 +224,15 @@ solarTermOffsets = $(lift (Vector.fromList
   ))
 
 -- | 0-3: leapMonth (0-12), 0 => Not a leap year
--- | 4-16: MonthLength, 0 => shorter month (30 days), 1 => longer month (31 days)
--- | 17-22: Spring Festival date offset to 01/01
--- | 23: empty
--- | 24-71: solar term offset (starting from 小寒), 2 bits each
--- |
--- | 9 bytes in total
--- | NB. the `bits` library storing bits starts with MSB of a byte
--- |
--- | `data_` is encoded with chinese calendar data in 1901~2100
+-- 4-16: MonthLength, 0 => shorter month (30 days), 1 => longer month (31 days)
+-- 17-22: Spring Festival date offset to 01/01
+-- 23: empty
+-- 24-71: solar term offset (starting from 小寒), 2 bits each
+--
+-- 9 bytes in total
+-- NB. the `bits` library storing bits starts with MSB of a byte
+--
+-- `data_` is encoded with chinese calendar data in 1901~2100
 data_ :: Vector BS.ByteString
 data_ = $(lift (Vector.fromList (fmap BS.pack
   [[4,174,98,165,166,170,154,170,169],     [10,87,76,169,170,174,170,170,170]
