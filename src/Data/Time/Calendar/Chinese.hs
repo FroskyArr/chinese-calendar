@@ -184,6 +184,9 @@ lookup year = index `seq` decode (BSL.fromStrict $ data_ ! index)
   where
   index = fromInteger year - fst yearRange
 
+solarTermOffsets :: [Int]
+solarTermOffsets =
+  [4,19, 3,18,4,19,4,19, 4,20,4,20,6,22, 6,22,6,22,7,22, 6,21,6,21]
 
 -- | 0-3: leapMonth (0-12), 0 => Not a leap year
 -- | 4-16: MonthLength, 0 => shorter month (30 days), 1 => longer month (31 days)
@@ -191,8 +194,10 @@ lookup year = index `seq` decode (BSL.fromStrict $ data_ ! index)
 -- | 23: empty
 -- | 24-71: solar term offset (starting from 小寒), 2 bits each
 -- |
--- | 9 bytes
--- | NB. the `bits` storing bits starts with MSB of a byte
+-- | 9 bytes in total
+-- | NB. the `bits` library storing bits starts with MSB of a byte
+-- |
+-- | `data_` is encoded with chinese calendar data in 1901~2100
 data_ :: Vector BS.ByteString
 data_ = $(lift (Vector.fromList (fmap BS.pack
   [[4,174,98,165,166,170,154,170,169],     [10,87,76,169,170,174,170,170,170]
