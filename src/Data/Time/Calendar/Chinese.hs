@@ -197,7 +197,6 @@ modifiedJulianDayRange = $(lift
   ))
 
 clip :: Ord a => (a, a) -> a -> a
-
 clip (l,_) n | n < l = l
 clip (_,r) n | n > r = r
 clip _     n         = n
