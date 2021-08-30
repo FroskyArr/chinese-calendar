@@ -1,18 +1,23 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Data.Time.Calendar.Chinese where
+module Data.Time.Calendar.Chinese (
+  fromGregorian, fromGregorianValid, toGregorian,
+  fromDay, fromDayValid, toDay,
+  today,
+  format
+  ) where
 
-import Data.Time
-import Data.Time.Calendar as Calendar
+import Data.Time (Day(..), UTCTime(utctDay), addDays, diffDays, getCurrentTime)
+import qualified Data.Time.Calendar as Calendar
 
 import Data.Bits.Coded (runDecode, runEncode)
-import Data.Bits.Coding
+import Data.Bits.Coding (getBit, getBitsFrom, putBit, putBitsFrom)
 import Data.Bytes.Get (MonadGet, runGetL)
 import Data.Bytes.Put (runPutL)
 
 import Control.Monad (replicateM, void, when)
-import Data.Maybe
+import Data.Maybe (Maybe(..), fromMaybe, isNothing)
 import Data.Vector (Vector, (!))
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (lift)
@@ -29,7 +34,7 @@ fromGregorian y m d = fromDay $ Calendar.fromGregorian y m d
 {-# INLINE fromGregorian #-}
 
 fromGregorianValid :: Integer -> Int -> Int -> Maybe ChnDay
-fromGregorianValid y m d = do
+fromGregorianValid y m d =
   if inRange yearRange (fromInteger y)
     then ChnDay <$> Calendar.fromGregorianValid y m d
     else Nothing
@@ -57,6 +62,9 @@ toDay (ChnDay day) = day
 
 today :: IO ChnDay
 today = fromDay . utctDay <$> getCurrentTime
+{-# INLINE today #-}
+
+
 
 data C = C
   { springFestival :: Int
@@ -85,6 +93,8 @@ decode bs = flip runGetL bs $ runDecode $ do
   void getBit
   solarTermOffset <- replicateM 24 (getBitsFrom 1 0)
   pure C{..}
+
+
 
 format :: ChnDay -> String
 format (ChnDay day0) =
@@ -168,24 +178,21 @@ inRange (l,r) n | l <= n && n <= r = True
 inRange _ _ = False
 {-# INLINE inRange #-}
 
+-- won't check if year is in range
 lookup :: Integer -> C
 lookup year = index `seq` decode (BSL.fromStrict $ data_ ! index)
   where
   index = fromInteger year - fst yearRange
 
-{-
 
-0-3: leapMonth (0-12), 0 => Not a leap year
-4-16: MonthLength, 0 => shorter month (30 days), 1 => longer month (31 days)
-17-22: Spring Festival date offset to 01/01
-23: empty
-24-71: solar term offset (starting from 小寒), 2 bits each
-
-9 bytes
-
-
--}
-
+-- | 0-3: leapMonth (0-12), 0 => Not a leap year
+-- | 4-16: MonthLength, 0 => shorter month (30 days), 1 => longer month (31 days)
+-- | 17-22: Spring Festival date offset to 01/01
+-- | 23: empty
+-- | 24-71: solar term offset (starting from 小寒), 2 bits each
+-- |
+-- | 9 bytes
+-- | NB. the `bits` storing bits starts with MSB of a byte
 data_ :: Vector BS.ByteString
 data_ = $(lift (Vector.fromList (fmap BS.pack
   [[4,174,98,165,166,170,154,170,169],     [10,87,76,169,170,174,170,170,170]
