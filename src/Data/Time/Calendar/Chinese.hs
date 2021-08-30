@@ -25,6 +25,8 @@ import Prelude hiding (lookup)
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
+import Data.Foldable (asum)
+import Data.Functor ((<&>))
 import qualified Data.Vector as Vector
 
 newtype ChnDay = ChnDay Day
@@ -129,6 +131,33 @@ format (ChnDay day0) =
     Just x | x < m -> (False, m-1)
     _ -> (False, m)
 
+getSolarTerm :: ChnDay -> Maybe String
+getSolarTerm (ChnDay day0) =
+  asum $ [m*2-1, m*2-2] <&> \idx -> do
+    let d = solarTermOffsets ! idx + offsetsInYear !! idx
+    if Calendar.fromGregorian y m d == day0
+       then Just (solarTerm ! idx)
+       else Nothing
+  where
+  offsetsInYear = solarTermOffset $ lookup y
+  (y,m,d) = Calendar.toGregorian day0
+
+solarTerm :: Vector String
+solarTerm = $(lift (Vector.fromList
+  ["小寒","大寒"
+  ,"立春","雨水"
+  ,"惊蛰","春分"
+  ,"清明","谷雨"
+  ,"立夏","小满"
+  ,"芒种","夏至"
+  ,"小暑","大暑"
+  ,"立秋","处暑"
+  ,"白露","秋分"
+  ,"寒露","霜降"
+  ,"立冬","小雪"
+  ,"大雪","冬至"
+  ]))
+
 showYear :: Integer -> String
 showYear y =
   [stems !! stem, branches !! branch, '年']
@@ -168,6 +197,7 @@ modifiedJulianDayRange = $(lift
   ))
 
 clip :: Ord a => (a, a) -> a -> a
+
 clip (l,_) n | n < l = l
 clip (_,r) n | n > r = r
 clip _     n         = n
@@ -178,15 +208,16 @@ inRange (l,r) n | l <= n && n <= r = True
 inRange _ _ = False
 {-# INLINE inRange #-}
 
--- won't check if year is in range
+-- won't check if year is in range (for a valid ChnDay it should be fine)
 lookup :: Integer -> C
 lookup year = index `seq` decode (BSL.fromStrict $ data_ ! index)
   where
   index = fromInteger year - fst yearRange
 
-solarTermOffsets :: [Int]
-solarTermOffsets =
-  [4,19, 3,18,4,19,4,19, 4,20,4,20,6,22, 6,22,6,22,7,22, 6,21,6,21]
+solarTermOffsets :: Vector Int
+solarTermOffsets = $(lift (Vector.fromList
+  [4,19, 3,18,4,19,4,19, 4,20,4,20,6,22, 6,22,6,22,7,22, 6,21,6,21] :: Vector Int
+  ))
 
 -- | 0-3: leapMonth (0-12), 0 => Not a leap year
 -- | 4-16: MonthLength, 0 => shorter month (30 days), 1 => longer month (31 days)
