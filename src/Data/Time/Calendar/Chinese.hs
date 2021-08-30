@@ -129,9 +129,10 @@ format (ChnDay day0) =
       else (calcLeap month, day+1) -- day+1 because it's not offset anymore
     where x = day - 29 - fromEnum dom
 
+  -- return (isLeap, num-part of a month)
   calcLeap :: Int -> (Bool, Int)
   calcLeap m = case leapMonth yearInfo of
-    Just x | x == m -> (True, m)
+    Just x | x == m -> (True, m-1)
     Just x | x < m -> traceShowId (False, m-1)
     _ -> (False, m)
 
