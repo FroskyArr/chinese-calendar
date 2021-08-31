@@ -27,6 +27,8 @@ import Data.Bytes.Get (MonadGet, runGetL)
 import Data.Bytes.Put (runPutL)
 
 import Control.Monad (replicateM, void, when)
+import Data.Foldable (asum)
+import Data.Functor ((<&>))
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
 import Data.Vector (Vector, (!))
 import Instances.TH.Lift ()
@@ -35,8 +37,6 @@ import Prelude hiding (lookup)
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
-import Data.Foldable (asum)
-import Data.Functor ((<&>))
 import qualified Data.Vector as Vector
 
 newtype ChnDay = ChnDay Day
@@ -153,6 +153,7 @@ format (ChnDay day0) =
 -- |
 -- >>> getSolarTerm (fromGregorian 2021 8 23)
 -- Just "处暑"
+getSolarTerm :: ChnDay -> Maybe String
 getSolarTerm (ChnDay day0) =
   asum $ [m*2-1, m*2-2] <&> \idx -> do
     let d = solarTermOffsets ! idx + offsetsInYear !! idx
